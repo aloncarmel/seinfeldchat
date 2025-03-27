@@ -37,15 +37,22 @@ export async function POST(req: Request) {
     const lastUserMessage = messages[messages.length - 1].content;
     
     // Find relevant context from embeddings
-    const similarChunks = await findSimilarChunks(lastUserMessage, 3);
+    const similarChunks = await findSimilarChunks(lastUserMessage, 5);
     const context = similarChunks.map(chunk => chunk.text).join('\n');
 
     const systemPrompt = `${characterPrompts[character]}
     
-Here's some context from previous Seinfeld episodes that might be relevant:
+Here are some examples of how you've spoken in previous episodes:
 ${context}
 
-Use this context to inform your responses, but you can also improvise in character. Always stay true to your character's personality and speech patterns.`;
+IMPORTANT INSTRUCTIONS FOR SPEAKING STYLE:
+1. Study the speaking patterns, vocabulary, and mannerisms in the example lines above
+2. Use similar phrases, expressions, and speech patterns that appear in these examples
+3. Match the rhythm and flow of how your character speaks in these examples
+4. Include character-specific catchphrases or expressions when they naturally fit
+5. Maintain the same level of emotion and energy shown in the example lines
+
+Your response should feel like it could be a real line from the show. Use the context to inform both WHAT you say and HOW you say it.`;
 
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL as string,
@@ -54,10 +61,10 @@ Use this context to inform your responses, but you can also improvise in charact
         { role: 'system', content: systemPrompt },
         ...messages
       ],
-      temperature: 0.2,
+      temperature: 0.7,
       max_tokens: 300,
-      presence_penalty: 0.6, // Encourage varied responses
-      frequency_penalty: 0.3, // Reduce repetition
+      presence_penalty: 0.7,
+      frequency_penalty: 0.5,
     });
 
     // Convert the OpenAI stream to a ReadableStream
