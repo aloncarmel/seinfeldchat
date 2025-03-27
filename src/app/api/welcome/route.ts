@@ -1,5 +1,5 @@
 import { OpenAI } from 'openai';
-import { characterPrompts } from '../chat/route';
+import { characterPrompts } from '@/app/utils/characterPrompts';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY!,
@@ -7,9 +7,13 @@ const openai = new OpenAI({
 
 export const runtime = 'edge';
 
+type WelcomeRequest = {
+  character: keyof typeof characterPrompts;
+};
+
 export async function POST(req: Request) {
   try {
-    const { character } = await req.json();
+    const { character } = await req.json() as WelcomeRequest;
     
     if (!character || !characterPrompts[character]) {
       return new Response('Invalid character', { status: 400 });
