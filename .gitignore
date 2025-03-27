@@ -41,3 +41,7 @@ yarn-error.log*
 next-env.d.ts
 
 embeddings.json
+
+# Large data files
+public/data/embeddings.json
+public/data/seinfeld_embeddings.parquet
