@@ -17,37 +17,35 @@ interface SimilarityResult {
 
 // Cache embeddings in memory
 let embeddingsCache: EmbeddingChunk[] | null = null;
-const CACHE_DURATION = 1000 * 60 * 60; // 1 hour
 
-async function clearCacheAfterDelay() {
-  await new Promise(resolve => setTimeout(resolve, CACHE_DURATION));
-  embeddingsCache = null;
-}
-
-export async function loadEmbeddings(): Promise<EmbeddingChunk[]> {
-  if (embeddingsCache) return embeddingsCache;
-  
+// Initialize embeddings on server start
+async function initializeEmbeddings() {
   try {
-    // Load the JSON file
-    const response = await fetch(new URL('/data/embeddings.json', process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}`
-      : 'http://localhost:3000'));
+    // Load the JSON file from environment variable or fallback to local path
+    const embeddingsUrl = process.env.NEXT_PUBLIC_EMBEDDINGS_URL || '/data/embeddings.json';
+    const response = await fetch(embeddingsUrl);
     
     if (!response.ok) {
       throw new Error(`Failed to load embeddings: ${response.statusText}`);
     }
 
-    const loadedEmbeddings = await response.json();
-    embeddingsCache = loadedEmbeddings;
-    
-    // Set up cache expiration
-    clearCacheAfterDelay();
-    
-    return loadedEmbeddings;
+    embeddingsCache = await response.json();
+    console.log('Embeddings loaded successfully into memory');
   } catch (error) {
-    console.error('Error loading embeddings:', error);
-    return [];
+    console.error('Error initializing embeddings:', error);
+    embeddingsCache = [];
   }
+}
+
+// Initialize embeddings immediately
+initializeEmbeddings();
+
+export async function loadEmbeddings(): Promise<EmbeddingChunk[]> {
+  if (!embeddingsCache) {
+    // If cache is somehow cleared, reload embeddings
+    await initializeEmbeddings();
+  }
+  return embeddingsCache || [];
 }
 
 // Cosine similarity function
