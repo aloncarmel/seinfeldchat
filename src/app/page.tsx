@@ -12,7 +12,19 @@ const characters = [
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-5 max-w-4xl mx-auto">
+    <main className="flex min-h-screen flex-col items-center justify-center p-5 max-w-4xl mx-auto relative">
+      <div className="absolute top-4 right-4">
+        <a
+          className="github-button"
+          href="https://github.com/aloncarmel/seinfeldchat"
+          data-color-scheme="no-preference: light; light: light; dark: dark;"
+          data-icon="octicon-repo"
+          data-size="large"
+          aria-label="Fork aloncarmel/seinfeldchat on GitHub"
+        >
+          View on GitHub
+        </a>
+      </div>
       <Image src="/seinfeldlogo.png" alt="Seinfeld Logo" className="mt-10" width={300} height={300} />
       <h1 className="text-3xl font-bold mb-8 text-white text-center">Chat with your favorite Seinfeld<br /> characters using the power of AI!</h1>
       
