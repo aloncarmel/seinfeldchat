@@ -31,22 +31,21 @@ export async function POST(req: Request) {
     const lastUserMessage = messages[messages.length - 1].content;
     
     // Find relevant context from embeddings
-    const similarChunks = await findSimilarChunks(lastUserMessage, 5);
-    const context = similarChunks.map(chunk => chunk.text).join('\n');
+    const similarChunks = await findSimilarChunks(lastUserMessage, 3);
+    const context = similarChunks
+      .map(chunk => {
+        const lines = chunk.text.split('\n');
+        // Take only the most relevant line if it contains multiple lines
+        return lines.length > 1 ? lines[0] : chunk.text;
+      })
+      .join('\n');
 
     const systemPrompt = `${characterPrompts[character]}
-    
-Here are some examples of how you've spoken in previous episodes:
+
+Relevant context:
 ${context}
 
-IMPORTANT INSTRUCTIONS FOR SPEAKING STYLE:
-1. Study the speaking patterns, vocabulary, and mannerisms in the example lines above
-2. Use similar phrases, expressions, and speech patterns that appear in these examples
-3. Match the rhythm and flow of how your character speaks in these examples
-4. Include character-specific catchphrases or expressions when they naturally fit
-5. Maintain the same level of emotion and energy shown in the example lines
-
-Your response should feel like it could be a real line from the show. Use the context to inform both WHAT you say and HOW you say it.`;
+IMPORTANT: Match your speaking style to these examples. Use similar phrases and mannerisms, maintaining your character's unique voice and energy.`;
 
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL as string,
@@ -55,7 +54,7 @@ Your response should feel like it could be a real line from the show. Use the co
         { role: 'system', content: systemPrompt },
         ...messages
       ],
-      temperature: 0.7,
+      temperature: 0.1,
       max_tokens: 300,
       presence_penalty: 0.7,
       frequency_penalty: 0.5,
