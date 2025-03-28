@@ -35,12 +35,12 @@ export default function Home() {
             href={`/talk/${char.id}`}
             className="flex flex-col items-center p-4 bg-white/90 rounded-lg shadow-lg hover:shadow-xl transition-all hover:scale-105"
           >
-            <div className="w-48 h-48 relative mb-4 rounded-lg overflow-hidden">
+            <div className="w-full h-full relative mb-4 rounded-lg overflow-hidden">
               <Image
                 src={char.image}
                 alt={char.name}
                 fill
-                className="object-cover"
+                className="object-cover max-w-[12rem] max-h-[12rem]"
               />
             </div>
             <span className="text-xl text-black font-semibold">{char.name}</span>

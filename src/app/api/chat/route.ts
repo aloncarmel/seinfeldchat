@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 import { StreamingTextResponse } from 'ai';
 import { findSimilarChunks } from '@/app/utils/embeddings';
-import { characterPrompts } from '@/app/utils/characterPrompts';
+import { characterPrompts, characterVoices, characterExamples, scriptStyle } from '@/app/utils/characterPrompts';
 
 // Initialize OpenAI client
 const openai = new OpenAI({
@@ -9,6 +9,13 @@ const openai = new OpenAI({
 });
 
 export const runtime = 'edge';
+
+const characters = {
+  jerry: { name: 'Jerry Seinfeld' },
+  george: { name: 'George Costanza' },
+  elaine: { name: 'Elaine Benes' },
+  kramer: { name: 'Cosmo Kramer' },
+};
 
 type ChatRequest = {
   messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
@@ -30,22 +37,36 @@ export async function POST(req: Request) {
     // Get the last user message
     const lastUserMessage = messages[messages.length - 1].content;
     
-    // Find relevant context from embeddings
+    // Find relevant context about the topic from embeddings
     const similarChunks = await findSimilarChunks(lastUserMessage, 3);
-    const context = similarChunks
-      .map(chunk => {
-        const lines = chunk.text.split('\n');
-        // Take only the most relevant line if it contains multiple lines
-        return lines.length > 1 ? lines[0] : chunk.text;
-      })
+    const topicalContext = similarChunks
+      .map(chunk => chunk.text)
       .join('\n');
+
+    // Get character-specific examples
+    const characterLines = characterExamples[character].join('\n');
 
     const systemPrompt = `${characterPrompts[character]}
 
-Relevant context:
-${context}
+${characterVoices[character].style}
+${characterVoices[character].special_notes}
 
-IMPORTANT: Match your speaking style to these examples. Use similar phrases and mannerisms, maintaining your character's unique voice and energy.`;
+${scriptStyle}
+
+Here are some examples of how you typically speak:
+${characterLines}
+
+Here's some relevant context about what's being discussed:
+${topicalContext}
+
+IMPORTANT INSTRUCTIONS:
+1. Use the speaking style and patterns from your example lines
+2. Apply your character's unique personality to the topic at hand
+3. Stay true to your character's emotional range and energy level
+4. Use the topical context to inform WHAT you talk about
+5. Use your example lines to inform HOW you talk about it
+
+Remember: You're having a natural conversation as your character - respond as if you're in a scene from the show.`;
 
     const response = await openai.chat.completions.create({
       model: process.env.OPENAI_MODEL as string,
@@ -54,7 +75,7 @@ IMPORTANT: Match your speaking style to these examples. Use similar phrases and 
         { role: 'system', content: systemPrompt },
         ...messages
       ],
-      temperature: 0.1,
+      temperature: 0.7,
       max_tokens: 300,
       presence_penalty: 0.7,
       frequency_penalty: 0.5,
