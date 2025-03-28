@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useRef } from 'react';
+import SuggestedPhrases from '../../components/SuggestedPhrases';
 
 const PaperAirplaneIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -151,21 +152,33 @@ export default function CharacterChat() {
 
       {/* Fixed Input Form */}
       <div className="fixed bottom-0 left-0 w-full backdrop-blur-sm">
-        <div className="max-w-3xl mx-auto p-4">
-          <form onSubmit={handleSubmit} className="relative">
-            <input
-              value={input}
-              onChange={handleInputChange}
-              placeholder={`Say something to ${characterInfo.name}...`}
-              className="w-full h-12 pl-4 pr-12 border backdrop-blur-sm shadow-xl rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center bg-[#cd431b] text-white rounded-full hover:bg-blue-600 transition-colors"
-            >
-              <PaperAirplaneIcon />
-            </button>
-          </form>
+        <div className="max-w-3xl mx-auto">
+          <SuggestedPhrases 
+            character={character} 
+            onPhraseSelect={(phrase) => {
+              // Create a fake form event
+              const fakeEvent = { preventDefault: () => {} } as React.FormEvent<HTMLFormElement>;
+              // Set the input value and submit in one go
+              handleInputChange({ target: { value: phrase } } as React.ChangeEvent<HTMLInputElement>);
+              setTimeout(() => handleSubmit(fakeEvent), 0);
+            }} 
+          />
+          <div className="p-4">
+            <form onSubmit={handleSubmit} className="relative">
+              <input
+                value={input}
+                onChange={handleInputChange}
+                placeholder={`Say something to ${characterInfo.name}...`}
+                className="w-full h-12 pl-4 pr-12 border backdrop-blur-sm shadow-xl rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                type="submit"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 flex items-center justify-center bg-[#cd431b] text-white rounded-full hover:bg-blue-600 transition-colors"
+              >
+                <PaperAirplaneIcon />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </main>
