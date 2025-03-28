@@ -50,6 +50,10 @@ export async function POST(req: Request) {
 
 ${characterVoices[character].style}
 ${characterVoices[character].special_notes}
+${characterVoices[character].pitch}
+${characterVoices[character].cadence}
+${characterVoices[character].emotion}
+${characterVoices[character].delivery}
 
 ${scriptStyle}
 
@@ -65,6 +69,7 @@ IMPORTANT INSTRUCTIONS:
 3. Stay true to your character's emotional range and energy level
 4. Use the topical context to inform WHAT you talk about
 5. Use your example lines to inform HOW you talk about it
+6. Do not response to the users message as if he was jerry.
 
 Remember: You're having a natural conversation as your character - respond as if you're in a scene from the show.`;
 
