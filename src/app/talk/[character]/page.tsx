@@ -25,6 +25,7 @@ export default function CharacterChat() {
   const characterInfo = characters[character as keyof typeof characters];
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const welcomeSentRef = useRef(false);
+  const welcomeApiCalledRef = useRef(false);
 
   const { messages, input, handleInputChange, handleSubmit, setMessages } = useChat({
     body: { character },
@@ -34,7 +35,8 @@ export default function CharacterChat() {
   // Add welcome message
   useEffect(() => {
     async function getWelcomeMessage() {
-      if (!welcomeSentRef.current && messages.length === 0 && characterInfo) {
+      if (!welcomeSentRef.current && !welcomeApiCalledRef.current && messages.length === 0 && characterInfo) {
+        welcomeApiCalledRef.current = true;
         try {
           const response = await fetch('/api/welcome', {
             method: 'POST',
@@ -51,16 +53,17 @@ export default function CharacterChat() {
               createdAt: new Date()
             };
             setMessages([welcomeMessage]);
+            welcomeSentRef.current = true;
           }
         } catch (error) {
           console.error('Error getting welcome message:', error);
+          welcomeApiCalledRef.current = false; // Reset on error to allow retry
         }
-        welcomeSentRef.current = true;
       }
     }
 
     getWelcomeMessage();
-  }, [character, characterInfo, messages.length, setMessages]);
+  }, [character, characterInfo, setMessages]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
