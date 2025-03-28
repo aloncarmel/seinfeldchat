@@ -76,7 +76,7 @@ export default function CharacterChat() {
         <div className="bg-white/90 p-8 rounded-lg shadow-lg text-center">
           <h1 className="text-2xl font-bold mb-4">Character not found</h1>
           <Link href="/" className="text-blue-500 hover:underline">
-            Return to character selection
+            Return to character
           </Link>
         </div>
       </main>
@@ -92,11 +92,11 @@ export default function CharacterChat() {
             href="/"
             className="px-4 py-2 border border-white/50 rounded hover:bg-white/10 transition-colors text-white"
           >
-            ← Back to Characters
+            ← Characters
           </Link>
           
           <div className="flex items-center gap-3">
-            <h1 className="text-lg font-bold text-white">Chat with {characterInfo.name}</h1>
+            <h1 className="text-lg font-bold text-white">{characterInfo.name}</h1>
             <div className="w-10 h-10 relative rounded-full overflow-hidden">
               <Image
                 src={characterInfo.image}
