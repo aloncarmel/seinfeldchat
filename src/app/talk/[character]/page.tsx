@@ -14,10 +14,10 @@ const PaperAirplaneIcon = () => (
 );
 
 const characters = {
-  jerry: { name: 'Jerry Seinfeld', image: '/jerry.png' },
-  george: { name: 'George Costanza', image: '/george.png' },
-  elaine: { name: 'Elaine Benes', image: '/elaine.png' },
-  kramer: { name: 'Cosmo Kramer', image: '/kramer.png' },
+  jerry: { name: 'Jerry Seinfeld', image: '/jerry.webp' },
+  george: { name: 'George Costanza', image: '/george.webp' },
+  elaine: { name: 'Elaine Benes', image: '/elaine.webp' },
+  kramer: { name: 'Cosmo Kramer', image: '/kramer.webp' },
 };
 
 export default function CharacterChat() {

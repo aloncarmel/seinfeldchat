@@ -43,3 +43,8 @@ next-env.d.ts
 # Large data files
 public/data/embeddings.json
 public/data/seinfeld_embeddings.parquet
+
+# cloudflare / opennext
+.open-next
+.wrangler
+.dev.vars

@@ -1,11 +1,7 @@
 import { OpenAI } from 'openai';
 import { characterPrompts } from '@/app/utils/characterPrompts';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
-export const runtime = 'edge';
 
 type WelcomeRequest = {
   character: keyof typeof characterPrompts;
@@ -13,6 +9,7 @@ type WelcomeRequest = {
 
 export async function POST(req: Request) {
   try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, fetch: globalThis.fetch });
     const { character } = await req.json() as WelcomeRequest;
     
     if (!character || !characterPrompts[character]) {

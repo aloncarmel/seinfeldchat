@@ -1,13 +1,13 @@
+import { initOpenNextCloudflareForDev } from '@opennextjs/cloudflare';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: 'place-hold.it',
-      },
-    ],
+    // Images are pre-optimized WebP files in /public, served as free static assets.
+    unoptimized: true,
   },
 };
 
-export default nextConfig; 
+export default nextConfig;
+
+initOpenNextCloudflareForDev();

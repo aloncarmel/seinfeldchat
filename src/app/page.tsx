@@ -4,10 +4,10 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 const characters = [
-  { id: 'jerry', name: 'Jerry Seinfeld', image: '/jerry.png' },
-  { id: 'george', name: 'George Costanza', image: '/george.png' },
-  { id: 'elaine', name: 'Elaine Benes', image: '/elaine.png' },
-  { id: 'kramer', name: 'Cosmo Kramer', image: '/kramer.png' },
+  { id: 'jerry', name: 'Jerry Seinfeld', image: '/jerry.webp' },
+  { id: 'george', name: 'George Costanza', image: '/george.webp' },
+  { id: 'elaine', name: 'Elaine Benes', image: '/elaine.webp' },
+  { id: 'kramer', name: 'Cosmo Kramer', image: '/kramer.webp' },
 ];
 
 export default function Home() {
@@ -25,7 +25,7 @@ export default function Home() {
           View on GitHub
         </a>
       </div>
-      <Image src="/seinfeldlogo.png" alt="Seinfeld Logo" className="mt-10" width={300} height={300} />
+      <Image src="/seinfeldlogo.webp" alt="Seinfeld Logo" className="mt-10" width={300} height={300} />
       <h1 className="text-3xl font-bold mb-8 text-white text-center">Chat with your favorite Seinfeld<br /> characters using the power of AI!</h1>
       
       <div className="grid grid-cols-2 gap-4">

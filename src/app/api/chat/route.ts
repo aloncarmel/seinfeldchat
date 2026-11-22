@@ -3,12 +3,7 @@ import { StreamingTextResponse } from 'ai';
 import { findSimilarChunks } from '@/app/utils/embeddings';
 import { characterPrompts, characterVoices, characterExamples, scriptStyle } from '@/app/utils/characterPrompts';
 
-// Initialize OpenAI client
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
 
-export const runtime = 'edge';
 
 const characters = {
   jerry: { name: 'Jerry Seinfeld' },
@@ -24,6 +19,7 @@ type ChatRequest = {
 
 export async function POST(req: Request) {
   try {
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, fetch: globalThis.fetch });
     const { messages, character } = (await req.json()) as ChatRequest;
     
     if (!messages?.length || !character) {

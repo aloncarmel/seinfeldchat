@@ -1,0 +1,15 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seinfeldchat",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "OPENAI_MODEL": "gpt-4o"
+  }
+  // OPENAI_API_KEY is a secret: set it with `npx wrangler secret put OPENAI_API_KEY`
+}

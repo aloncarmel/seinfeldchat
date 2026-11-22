@@ -18,7 +18,7 @@ export default function RootLayout({
         <Script src="https://buttons.github.io/buttons.js" />
       </head>
       <body
-        style={{ backgroundImage: 'url("/apartmentbackground.png")' }}
+        style={{ backgroundImage: 'url("/apartmentbackground.webp")' }}
         className={`min-h-screen antialiased relative  inset-0 bg-cover bg-center bg-no-repeat`}
       >
         {children}

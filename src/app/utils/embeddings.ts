@@ -1,13 +1,12 @@
 import { OpenAI } from 'openai';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
-
-interface EmbeddingChunk {
-  text: string;
-  embedding: number[];
-}
+// Embeddings are shipped as static assets (see public/data):
+//   meta.json        -> { dim, count }
+//   embeddings.f32   -> count * dim little-endian float32 values
+//   chunks/<i>.txt   -> source text for chunk i
+// Loading a Float32Array is nearly free in CPU terms, and only the top-K
+// texts are fetched per request, which keeps us well inside Workers CPU limits.
 
 interface SimilarityResult {
   text: string;
@@ -15,97 +14,106 @@ interface SimilarityResult {
   index: number;
 }
 
-// Cache embeddings in memory
-let embeddingsCache: EmbeddingChunk[] | null = null;
-
-// Initialize embeddings on server start
-async function initializeEmbeddings() {
-  try {
-    // Load the JSON file from environment variable or fallback to local path
-    const embeddingsUrl = process.env.NEXT_PUBLIC_EMBEDDINGS_URL || '/data/embeddings.json';
-    const response = await fetch(embeddingsUrl);
-    
-    if (!response.ok) {
-      throw new Error(`Failed to load embeddings: ${response.statusText}`);
-    }
-
-    embeddingsCache = await response.json();
-    console.log('Embeddings loaded successfully into memory');
-  } catch (error) {
-    console.error('Error initializing embeddings:', error);
-    embeddingsCache = [];
-  }
+interface EmbeddingIndex {
+  dim: number;
+  count: number;
+  vectors: Float32Array;
+  norms: Float32Array;
 }
 
-// Initialize embeddings immediately
-initializeEmbeddings();
+let indexPromise: Promise<EmbeddingIndex> | null = null;
 
-export async function loadEmbeddings(): Promise<EmbeddingChunk[]> {
-  if (!embeddingsCache) {
-    // If cache is somehow cleared, reload embeddings
-    await initializeEmbeddings();
-  }
-  return embeddingsCache || [];
+function fetchAsset(path: string): Promise<Response> {
+  const { env } = getCloudflareContext();
+  if (!env.ASSETS) throw new Error('ASSETS binding is not configured');
+  return env.ASSETS.fetch(new URL(path, 'https://assets.local'));
 }
 
-// Cosine similarity function
-function cosineSimilarity(a: number[], b: number[]): number {
-  try {
-    if (a.length !== b.length) {
-      throw new Error('Vectors must have same length');
-    }
-
-    const dotProduct = a.reduce((sum, val, i) => sum + val * b[i], 0);
-    const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
-    const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
-    
-    if (magnitudeA === 0 || magnitudeB === 0) {
-      return 0;
-    }
-    
-    return dotProduct / (magnitudeA * magnitudeB);
-  } catch (error) {
-    console.error('Error calculating similarity:', error);
-    return 0;
+async function buildIndex(): Promise<EmbeddingIndex> {
+  const [metaRes, binRes] = await Promise.all([
+    fetchAsset('/data/meta.json'),
+    fetchAsset('/data/embeddings.f32'),
+  ]);
+  if (!metaRes.ok || !binRes.ok) {
+    throw new Error(`Failed to load embeddings: ${metaRes.status} / ${binRes.status}`);
   }
+  const { dim, count } = (await metaRes.json()) as { dim: number; count: number };
+  const vectors = new Float32Array(await binRes.arrayBuffer());
+  if (vectors.length !== dim * count) {
+    throw new Error(`Embedding size mismatch: ${vectors.length} != ${dim * count}`);
+  }
+  const norms = new Float32Array(count);
+  for (let i = 0; i < count; i++) {
+    let s = 0;
+    const off = i * dim;
+    for (let j = 0; j < dim; j++) s += vectors[off + j] * vectors[off + j];
+    norms[i] = Math.sqrt(s);
+  }
+  return { dim, count, vectors, norms };
+}
+
+function loadIndex(): Promise<EmbeddingIndex> {
+  if (!indexPromise) {
+    indexPromise = buildIndex().catch((err) => {
+      indexPromise = null; // allow retry on the next request
+      throw err;
+    });
+  }
+  return indexPromise;
 }
 
 export async function findSimilarChunks(query: string, topK: number = 5): Promise<SimilarityResult[]> {
   try {
-    // Input validation
     if (!query.trim()) {
       return [];
     }
 
-    // Get query embedding using the latest model
-    const queryEmbeddingResponse = await openai.embeddings.create({
-      model: "text-embedding-3-small",
-      input: query.trim(),
-      encoding_format: "float",
-      dimensions: 1536  // Explicitly set dimensions
-    });
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY!, fetch: globalThis.fetch });
+    const [queryEmbeddingResponse, index] = await Promise.all([
+      openai.embeddings.create({
+        model: 'text-embedding-3-small',
+        input: query.trim(),
+        encoding_format: 'float',
+        dimensions: 1536,
+      }),
+      loadIndex(),
+    ]);
 
-    const queryEmbedding = queryEmbeddingResponse.data[0].embedding;
-    const chunks = await loadEmbeddings();
-    
-    if (!chunks.length) {
-      return [];
+    const q = queryEmbeddingResponse.data[0].embedding;
+    const { dim, count, vectors, norms } = index;
+    if (q.length !== dim) {
+      throw new Error('Query embedding has unexpected dimensions');
     }
-    
-    // Calculate similarities
-    const similarities: SimilarityResult[] = chunks.map((chunk, i) => ({
-      text: chunk.text,
-      similarity: cosineSimilarity(queryEmbedding, chunk.embedding),
-      index: i
-    }));
 
-    // Sort by similarity and take top K results
-    return similarities
+    let qNorm = 0;
+    for (let j = 0; j < dim; j++) qNorm += q[j] * q[j];
+    qNorm = Math.sqrt(qNorm);
+    if (qNorm === 0) return [];
+
+    const scored: { index: number; similarity: number }[] = [];
+    for (let i = 0; i < count; i++) {
+      if (norms[i] === 0) continue;
+      const off = i * dim;
+      let dot = 0;
+      for (let j = 0; j < dim; j++) dot += q[j] * vectors[off + j];
+      scored.push({ index: i, similarity: dot / (qNorm * norms[i]) });
+    }
+
+    const top = scored
       .sort((a, b) => b.similarity - a.similarity)
       .slice(0, topK)
-      .filter(result => result.similarity > 0.3); // Filter out low-similarity results
+      .filter((r) => r.similarity > 0.3);
+
+    const texts = await Promise.all(
+      top.map(async (r) => {
+        const res = await fetchAsset(`/data/chunks/${r.index}.txt`);
+        return res.ok ? res.text() : '';
+      })
+    );
+
+    return top.map((r, i) => ({ ...r, text: texts[i] }));
   } catch (error) {
     console.error('Error finding similar chunks:', error);
     return [];
   }
-} 
+}
