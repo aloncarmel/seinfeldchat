@@ -1,0 +1,13 @@
+// Deploy config that embeds static assets in the worker bundle.
+// Used by `npm run deploy:embedded`; wrangler.jsonc stays the standard config.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seinfeldchat",
+  "main": "cf-worker.mjs",
+  "compatibility_date": "2026-11-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "rules": [{ "type": "Data", "globs": ["**/*.bin"], "fallthrough": false }],
+  "vars": {
+    "OPENAI_MODEL": "gpt-4o"
+  }
+}

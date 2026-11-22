@@ -48,3 +48,5 @@ public/data/seinfeld_embeddings.parquet
 .open-next
 .wrangler
 .dev.vars
+
+# embedded-asset deploy (scripts/embed-assets.mjs)
